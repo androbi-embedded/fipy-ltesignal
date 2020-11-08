@@ -25,7 +25,7 @@ In order to "calibrate" your ltesignal device, leave it connected
 with the console and run it at a location with "normal" or
 "reference" signal. Leave it running for a while (a couple of 
 minutes) and use the last two values of the last data row (mean 
-values <rsrp> and <rsrq>) 
+values `<rsrp>` and `<rsrq>`) 
 
     rsrp,rsrq,<rsrp>,<rsrq> -107.29 -14.44 -107.7893 -14.724375
 
