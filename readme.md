@@ -1,9 +1,10 @@
 # Measure LTE signal strength with FiPy
 
-This script will blink the FiPy led in colors that indicate LTE signal quality. Green
-is the reference value, colors going towards blue represent a weaker signal, yellow
-or red tones represent stronger signals. There are two blinks, the first indicates 
-RSRP and the second RSRQ. For a discussion of these parameters see 
+This script will blink the FiPy led in colors that indicate LTE 
+signal quality. Green is the reference value, colors going towards 
+blue represent a weaker signal, yellow or red tones represent stronger 
+signals. There are two blinks, the first indicates RSRP and the second 
+RSRQ. For a discussion of these parameters see 
 (https://www.mdpi.com/1424-8220/20/6/1636/htm).
 
 As default values, the follwing windows for the parameters (as defined
@@ -54,5 +55,10 @@ Disable pybytes at startup:
 
     import pycom
     pycom.pybytes_on_boot(False)
+
+SIM-cards: I have the Vodafone LTE card that pycom sells. If you have another 
+SIM you should comment the two `socket.dnsserver()` calls in line 4 and 5 of
+`main.py`. Also, enter the correct `band` and `apn` parameters in the call
+`lte.attach()`. 
 
 Have fun!

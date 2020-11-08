@@ -49,12 +49,14 @@ def signal_quality(rsrp_center=-110, rsrp_hw=15, rsrq_center=-15, rsrq_hw=7.5,
     if show_status:
         print("attached!")
     pycom.heartbeat(False)
+    # three short green blinks -> we are attached
     for _ in range(3):
         pycom.rgbled(0x00ff00)
         time.sleep(0.15)
         pycom.rgbled(0)
         time.sleep(0.05)
     time.sleep(2)
+    # main loop
     while True:
         res = lte.send_at_cmd('AT!="showphy"')
         #print(res)
@@ -66,13 +68,15 @@ def signal_quality(rsrp_center=-110, rsrp_hw=15, rsrq_center=-15, rsrq_hw=7.5,
                 no_cell = 0
                 rsrp = float(match.group(1))
                 rsrq = float(match.group(2))
+                # accumulated mean values
                 rsrp_mean = rsrp_mean + rsrp
                 rsrq_mean = rsrq_mean + rsrq
                 valid_data = valid_data + 1
-                print("rsrp,rsrq,<rsrp>,<rsrq>",rsrp,rsrq,rsrp_mean/valid_data,rsrq_mean/valid_data)    
-
+                print("rsrp,rsrq,<rsrp>,<rsrq>:",rsrp,rsrq,rsrp_mean/valid_data,rsrq_mean/valid_data)    
+                # 1st blink: rsrp
                 color_strength(rsrp, rsrp_min, rsrp_max, sensitivity)
                 time.sleep(0.5)
+                # 2nd blink: rsrq
                 color_strength(rsrq, rsrq_min, rsrq_max, sensitivity)
             else:
                 print("no match")
@@ -84,11 +88,9 @@ def signal_quality(rsrp_center=-110, rsrp_hw=15, rsrq_center=-15, rsrq_hw=7.5,
             else:
                 print('.',end='')
 
-            if (no_cell > 20): # do something so packets are sent
+            if (no_cell > 20):
                 if match.group(1)=="OFF":
                     sys.exit()
-                #no_cell = 0
-                #res = lte.send_at_cmd('AT+PING="172.31.16.100",1,32')
         time.sleep(2.0)
 
 def calc_eps():
@@ -103,25 +105,25 @@ def sigmoid(x):
     """ sigmoid function, see https://en.wikipedia.org/wiki/Sigmoid_function """
     return 1.0/(1.0 + math.exp(-x))
 
-def color_strength(rsrq, minval, maxval, sensitivity=False):
-    """ display signal strength or quality on led blue=bad green=okish red=super """
-    # restrict to range -21..-3
-    # minval, maxval = -21.0, -3.0 # -12.0 is midpoint
-    midpoint = minval + (maxval-minval)/2
-    if rsrq < minval:
-        rsrq = minval
-    if rsrq > maxval:
-        rsrq = maxval
+def color_strength(val, minval, maxval, sensitivity=False):
+    """ display signal strength or quality on led blue=bad green=normal red=super """
+    # restrict to range [minval,maxval]
+    if val < minval:
+        val = minval
+    if val > maxval:
+        val = maxval
     # low .. middle .. high colors
     colors = [(0, 0, 255), (0, 255, 0), (255, 0, 0)]  # [BLUE, GREEN, RED]
     # calculate color index
     if sensitivity:
-        # apply sensitivity function: shift [min , max] -> [-val , +val] -> [0 , 1]
-        rsrq_center = rsrq - midpoint
-        r, g, b = convert_to_rgb(0.0, 1.0, sigmoid(rsrq_center), colors)
+        # translate to symmetric [min , max] -> [-val , +val] 
+        midpoint = minval + (maxval-minval)/2
+        val_center = val - midpoint
+        # apply sensivity function: -> [0 , 1]
+        r, g, b = convert_to_rgb(0.0, 1.0, sigmoid(val_center), colors)
     else:
-        r, g, b = convert_to_rgb(minval, maxval, rsrq, colors)
-    # print('{:.3f} -> ({:3d}, {:3d}, {:3d})'.format(rsrq, r, g, b))
+        r, g, b = convert_to_rgb(minval, maxval, val, colors)
+    # print('{:.3f} -> ({:3d}, {:3d}, {:3d})'.format(val, r, g, b))
     color = r << 16 | g << 8 | b
     # show on led
     pycom.rgbled(color)
@@ -130,6 +132,7 @@ def color_strength(rsrq, minval, maxval, sensitivity=False):
 
 EPSILON = calc_eps()
 def convert_to_rgb(minval, maxval, val, colors):
+    """ convert a numerical value to rgb color values """ 
     # see https://stackoverflow.com/questions/20792445/calculate-rgb-value-for-a-range-of-values-to-create-heat-map
     i_f = float(val-minval) / float(maxval-minval) * (len(colors)-1)
     i, f = int(i_f // 1), i_f % 1  # Split into whole & fractional parts.
@@ -141,4 +144,4 @@ def convert_to_rgb(minval, maxval, val, colors):
 
 print("Starting ..")
 time.sleep(2)
-signal_quality(rsrp_center=-107.8, rsrq_center=-14.7, show_status=True) 
+signal_quality(rsrp_center=-107.8, rsrq_center=-14.7, show_status=True, sensitivity=True) 
