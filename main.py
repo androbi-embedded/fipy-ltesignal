@@ -82,11 +82,12 @@ def signal_quality(rsrp_center=-110, rsrp_hw=15, rsrq_center=-15, rsrq_hw=7.5,
                 print("no match")
         else:
             no_cell = no_cell + 1
-            match = re.search(r'Synchro\sstate\s*:\s*([a-zA-Z0-9_]+[\s]?[a-zA-Z0-9]+)', res) 
-            if match:
-                print(match.group(1))
-            else:
-                print('.',end='')
+            match = re.search(r'Synchro\sstate\s*:\s*([a-zA-Z0-9_]+[\s]?[a-zA-Z0-9]+)', res)
+            if show_status:
+                if match:
+                    print(match.group(1))
+                else:
+                    print('.',end='')
 
             if (no_cell > 20):
                 if match.group(1)=="OFF":
