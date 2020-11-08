@@ -144,4 +144,4 @@ def convert_to_rgb(minval, maxval, val, colors):
 
 print("Starting ..")
 time.sleep(2)
-signal_quality(rsrp_center=-107.8, rsrq_center=-14.7, show_status=True, sensitivity=True) 
+signal_quality(rsrp_center=-107.8, rsrq_center=-14.7, show_status=True) 
