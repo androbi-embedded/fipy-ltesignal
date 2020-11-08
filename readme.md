@@ -10,8 +10,8 @@ As default values, the follwing windows for the parameters (as defined
 by their center and half width values in function signal_quality()) 
 are used: 
 
-RSRP [ -140 dBm, -90 dBm] center: -110.0 dBm
-RSRQ [ -22.5 dB, -7.5 dB] center:  -15.0 dB
+    RSRP [ -140 dBm, -90 dBm] center: -110.0 dBm
+    RSRQ [ -22.5 dB, -7.5 dB] center:  -15.0 dB
 
 That means that the led is green when the signal is 
 on the center value, blue when the minimal value is 
