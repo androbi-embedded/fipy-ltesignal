@@ -1,8 +1,9 @@
 import socket
-# modify the lte.attach command for your SIM
 # use this for the Vodafone SIM sold by pycom
 socket.dnsserver(0,"172.31.16.100")
 socket.dnsserver(1,"172.31.32.100")
+# parameters for the lte.attach
+ATTACH_PARAMETERS={"band": 20, "apn": "pycom.io"}
 import time
 import re
 import sys
@@ -41,7 +42,7 @@ def signal_quality(rsrp_center=-110, rsrp_hw=15, rsrq_center=-15, rsrq_hw=7.5,
     lte.init()
     if show_status:
         print("attaching..")
-    lte.attach(band=20, apn="pycom.io")
+    lte.attach(**ATTACH_PARAMETERS)
     oldstat=(None,None) 
     while not lte.isattached():
         time.sleep(0.25)
