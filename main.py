@@ -11,7 +11,7 @@ import pycom
 import math
 
 def signal_quality(rsrp_center=-110, rsrp_hw=15, rsrq_center=-15, rsrq_hw=7.5,
-    show_status=False, show_at=False, sensitivity=False):
+    show_status=False, reset = False, sensitivity=False):
     """ attach to LTE and then query signal quality """
     # init mean values
     rsrp_mean=0.0
@@ -32,20 +32,29 @@ def signal_quality(rsrp_center=-110, rsrp_hw=15, rsrq_center=-15, rsrq_hw=7.5,
         print("init lte")
     try:
         lte = network.LTE()
-        lte.reset()
+        if reset:
+            print("reset lte")
+            lte.reset()
     except OSError:
-        print('cannot init/reset lte. switch your device off and on again.')
+        print('cannot init/reset lte. power your device off and on again.')
         sys.exit()
     lte.init()
     if show_status:
-        print("attaching",end='')
-    lte.attach(band=20, apn="pycom.io") 
+        print("attaching..")
+    lte.attach(band=20, apn="pycom.io")
+    oldstat=(None,None) 
     while not lte.isattached():
         time.sleep(0.25)
         if show_status:
             print('.',end='')
-        if show_at:
-            print(lte.send_at_cmd('AT!="fsm"'))         # get the System FSM
+            res = lte.send_at_cmd('AT!="fsm"')
+            match = re.search(r'RRC\sTOP\sFSM\s*\|([A-Z_]*)\s*\|\s*\|\s*RRC\sSEARCH\sFSM\s*\|([A-Z_]*)\s*', res) 
+            if match:
+                stat = (match.group(1), match.group(2))
+                if stat != oldstat:
+                    print("\n", stat, end='')
+                    oldstat = stat
+
     if show_status:
         print("attached!")
     pycom.heartbeat(False)
@@ -145,4 +154,5 @@ def convert_to_rgb(minval, maxval, val, colors):
 
 print("Starting ..")
 time.sleep(2)
-signal_quality(rsrp_center=-107.8, rsrq_center=-14.7, show_status=True) 
+signal_quality(rsrp_center=-107.8, rsrq_center=-14.7, 
+    show_status=True, reset=True) 
