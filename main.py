@@ -1,5 +1,5 @@
 import socket
-# use this for the Vodafone SIM sold by pycom
+# use this for the Vodafone SIM sold by pycom, comment out otherwise
 socket.dnsserver(0,"172.31.16.100")
 socket.dnsserver(1,"172.31.32.100")
 # parameters for the lte.attach
@@ -11,8 +11,22 @@ import network
 import pycom
 import math
 
+def at_match(lte,cmd,reg_expr,n_groups=0):
+    lines = lte.send_at_cmd(cmd)
+    match = re.search(reg_expr, lines)
+    if n_groups==0:
+        return match != None
+    if match:
+        result = []
+        for i in range(n_groups):
+            result.append(match.group(i+1))
+        return result
+    else:
+        # print("no match:",lines)
+        return []
+
 def signal_quality(rsrp_center=-110, rsrp_hw=15, rsrq_center=-15, rsrq_hw=7.5,
-    show_status=False, reset = False, sensitivity=False):
+    ntest = 10, show_status=False, reset = False, sensitivity=False):
     """ attach to LTE and then query signal quality """
     # init mean values
     rsrp_mean=0.0
@@ -37,9 +51,22 @@ def signal_quality(rsrp_center=-110, rsrp_hw=15, rsrq_center=-15, rsrq_hw=7.5,
             print("reset lte")
             lte.reset()
     except OSError:
-        print('cannot init/reset lte. power your device off and on again.')
+        print('cannot init/reset lte. power cycle your device.')
         sys.exit()
     lte.init()
+    # set n=2 in cereg. the code in lte seems to require n to be set to 2 without
+    # ever setting it when using "legacy" mode - see lte_check_attached() in 
+    # https://github.com/pycom/pycom-micropython-sigfox/blob/master/esp32/mods/modlte.c)
+    # In my case I could not attach when n!=2. I am not sure I am using legacy mode though.
+    cereg=at_match(lte,'AT+CEREG?',"\+CEREG:\s([0-9]+),([0-9]+)",2)
+    if len(cereg)==2:
+        if int(cereg[0])!=2:
+            print("fixing cereg=2:",cereg)
+            if not at_match(lte,'AT+CEREG=2',"\s*OK\s*"):
+                print('could not set n=2 with CEREG.')
+                sys.exit()
+            cereg=at_match(lte,'AT+CEREG?',"\+CEREG:\s([0-9]+),([0-9]+)",2)
+        print("cereg",cereg)
     if show_status:
         print("attaching..")
     lte.attach(**ATTACH_PARAMETERS)
@@ -55,7 +82,6 @@ def signal_quality(rsrp_center=-110, rsrp_hw=15, rsrq_center=-15, rsrq_hw=7.5,
                 if stat != oldstat:
                     print("\n", stat, end='')
                     oldstat = stat
-
     if show_status:
         print("attached!")
     pycom.heartbeat(False)
@@ -66,10 +92,9 @@ def signal_quality(rsrp_center=-110, rsrp_hw=15, rsrq_center=-15, rsrq_hw=7.5,
         pycom.rgbled(0)
         time.sleep(0.05)
     time.sleep(2)
-    # main loop
-    while True:
+    # main loop to measure signal strength
+    for _ in range(ntest):
         res = lte.send_at_cmd('AT!="showphy"')
-        #print(res)
         if res.find('CELL_ACQUIRED') != -1:
             match = re.search(r'RSRP\s\(dBm\)\s*:\s*(-?[0-9]*\.[0-9]*)\s*RSRQ\s\s\(dB\)\s*:\s*(-?[0-9]*\.[0-9]*)', res) 
             rsrp = 0.0
